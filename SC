@@ -1,0 +1,62 @@
+pragma solidity ^0.8.0;
+
+contract WerewolvesofWallStreet is ERC721, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+    string private _baseTokenURI;
+    uint256 public _price;
+
+    mapping(address => bool) public wl;
+    bool public isInEarlyMint = true;
+
+
+    constructor(string memory baseTokenURI, uint256 price)
+        ERC721("WerewolvesofWallStreet", "WWOWS")
+    {
+        _baseTokenURI = baseTokenURI;
+        _price = price;
+    }
+
+    function setPrice(uint256 price) public onlyOwner{
+        _price = price;
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    function setBaseURI(string memory newBaseURI) external onlyOwner {
+        _baseTokenURI = newBaseURI;
+    }
+
+    function mint(uint256 amount) public payable {
+        if (isInEarlyMint == true) {
+            require(wl[msg.sender] == true , "You are not in white list");
+        }
+        
+        require(amount > 0, "Amount cannot be zero");
+        require(msg.value == _price * amount, "Not enough balance");
+
+        payable(owner()).transfer(msg.value);
+
+        for (uint256 i; i < amount; i++) {
+            _tokenIds.increment();
+            uint256 newItemId = _tokenIds.current();
+            _mint(msg.sender, newItemId);
+        }
+    }
+
+    function addToWL(address[] memory accounts) public onlyOwner{
+        for(uint256 i; i<accounts.length; i++)
+            wl[accounts[i]] = true;
+    }
+
+    function removeFromWL(address[] memory accounts) public onlyOwner{
+        for(uint256 i; i<accounts.length; i++)
+            wl[accounts[i]] = false;
+    }
+
+    function changeEarlyMint() public onlyOwner {
+        isInEarlyMint = !isInEarlyMint;
+    }
+}
